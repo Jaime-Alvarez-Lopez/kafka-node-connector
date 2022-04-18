@@ -67,7 +67,7 @@ KafkaNode.prototype.Connect = async function () {
 
 /**
 	* Check if an array of topics exists
-	* @param {Object} topicsName An array of topics: ['topic1','topic2']
+	* @param {(string|string[])} topicsName String or string array: ['topic1','topic2']
 	* @return {boolean} Wether exist or not
 	*/
 KafkaNode.prototype.TopicsExist = function (topicsName) {
@@ -116,19 +116,20 @@ KafkaNode.prototype.ListTopics = function () {
 	* @return {boolean} True if created
 	*/
 KafkaNode.prototype.CreateTopics = function (topics) {
-	return new Promise((resolve,reject) => {
-		const e = this.TopicsExist(topics)
+	return new Promise(async (resolve,reject) => {
+		const e = await this.TopicsExist(topics.map(t => t?.topic)).catch(r => r)
 		console.log('exist',e)
 		if (!e) {
-			this.admin = this.admin || new Kafka.Admin(this.client)
-			this.admin?.createTopics(topics, (err,data) => {
+			this.client.createTopics(topics, (err,data) => {
 				console.info('===> Creating topics...')
-				if (data) {
-					console.log({topicsCreated: data})
+				if (data && !(data instanceof Error)) {
+					console.log(data)
 					resolve(true)
+				} else {
+					reject(false)
 				}
 				if (err) {
-					console.log(err.error)
+					console.log(err)
 					reject(false)
 				}
 			})
@@ -145,7 +146,7 @@ KafkaNode.prototype.CreateTopics = function (topics) {
 	* @param {function} cb Message callback
 	*/
 KafkaNode.prototype.StartListeningOnTopic = function ({topic,groupId},cb) {
-	if (this.TopicsExist([topic])) {
+	if (await this.TopicsExist(topic).catch(r => r)) {
 		this.consumer = this.consumer ||  new Kafka.Consumer(this.client,[{topic:topic || 'test'}],{groupId: groupId || 'default'})
 
 		this.consumer?.on('message',(m) => {

@@ -8,11 +8,14 @@ const KafkaBuilder = async function (connectionConfig,topics,producerConfig,cons
 		const connected = await Kafka.Connect().catch(r => r)
 
 		if (connected) {
-			// const created = await Kafka.CreateTopics(topics).catch(r => r)
-			// console.log('created',created)
+			await Kafka.ListTopics().catch(r => r)
 
-			const exist = await Kafka.TopicsExist(['test2','test3']).catch(r => r)
-			console.log('topics exist???',exist)
+			const created = await Kafka.CreateTopics(topics).catch(r => r)
+			console.log('created',created)
+
+			// const exist = await Kafka.TopicsExist(['test2','test3']).catch(r => r)
+			// console.log('topics exist???',exist)
+			await Kafka.ListTopics().catch(r => r)
 			await Kafka.ListTopics().catch(r => r)
 		}
 	} catch(e) {
