@@ -9,9 +9,11 @@ const KafkaEmitter = require('./kafkaEmitter')
 	* @constructor
 	* @param {Object} config Additional configs: {name:'KafkaNode',host:'localhost:29092'...}
 	*/
-const KafkaNode = function ({name,host,connectionTimeout,requestTimeout,maxAsyncRequests}) {
+const KafkaNode = function (config) {
 
-	this.name = name ||'KafkaNode'
+	const {name,host,connectionTimeout,requestTimeout,maxAsyncRequests} = config
+
+	this.name = name || 'KafkaNode'
 	this.host = host || 'localhost:9092'
 
 	this.connectionTimeout = connectionTimeout || 10000
