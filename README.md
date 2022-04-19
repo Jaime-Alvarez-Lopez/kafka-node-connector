@@ -4,97 +4,104 @@ Kakfa-node-connector
 Kafka-node-connector is a npm package that easies the use of [kafka-node npm package](https://www.npmjs.com/package/kafka-node)
 
 ## Install Kakfa-node-connector
-Run:
 ```bash
 npm install kafka-node-connector
 ```
-It will be then accesible in node_modules
 
 ## User reference
 
-Instantiate kafka-node-connector:
+Instantiate kafka-node-connector :
 
 ```javascript
-const KafkaConnector = require('kafka-node-connector')
+const {KafkaNodeConnector} = require('kafka-node-connector')
 
-const MyKafka = new KafkaConnector()
+const MyKafka = new KafkaNodeConnector(config)
 ```
-When instantiting whe can define its configuration. Default values are:
+
+Optionally you can set it's configuration :
 ```javascript
-const MyKafka = new KafkaConnector({
-   name: 'KafkaNode',
-   host: 'localhost:9092',
-   connectionTimeout: 10000,
-   requestTimeout: 30000,
-   maxAsyncRequests: 10,
-   client: null,
-   producer:null,
-   consumer:null
+// config: JSON object. Default values are:
+{
+    name: 'KafkaNode',
+    host: 'localhost:9092',
+    connectionTimeout: 10000,
+    requestTimeout: 30000,
+    maxAsyncRequests: 10
+}
+```
+
+Start the connection :
+```javascript
+await MyKafka.connect().catch(r => r)
+// True or false
+```
+
+List existing topics :
+```javascript
+await MyKafka.listTopics().catch(r => r)
+// Object containing topics or false
+```
+
+Check if an Array of strings as topics names exists :
+```javascript
+await MyKafka.topicsExist(['topic1','topic2']).catch(r => r)
+// True or false
+```
+
+Create topics from an Array of objects containing topic and extra configuration.
+Note that topics will be checked wether exist or not before creation, so no need to use topicsExist() before :
+```javascript
+await MyKafka.createTopics([
+   {
+        topic: 'topic1',
+        partitions: 1,
+        replicationFactor: 1,
+        configEntries: [
+            {
+                name: 'compression.type',
+                value: 'gzip'
+            }
+        ]
+    },
+    {
+        topic: 'topic2',
+        partitions: 1,
+        replicationFactor: 1,
+        configEntries: [
+            {
+                name: 'compression.type',
+                value: 'gzip'
+            }
+        ]
+    }
+]).catch(r => r)
+```
+
+Consume on a topic.
+```javascript
+MyKafka.consumeOnTopic(config, (error,message) => {
+    ...
 })
 ```
-Start the connection:
-```javascript
-    await MyKafka.KafkaConnect()
-    const connection = await MyKafka.KafkaConnect() // True or false
+Default config for consumer :
 ```
-
-List topics:
-```javascript
-   MyKafka.ListTopics((err,data) => {
-       ...
-   })
+{
+    topic: 'test',
+    groupId: 'default',
+    partition: 0
+}
 ```
-TopcisExist:
-```javascript
-   const exist = MyKafka.TopicsExist(['topic-1','topic-2'])
-   // True or false
-```
-
-Create topics:
-```javascript
-   await MyKafka.CreateTopics([
-       {
-            topic: 'topic-1',
-            partitions: 1,
-            replicationFactor: 1,
-            configEntries: [
-                {
-                    name: 'compression.type',
-                    value: 'gzip'
-                }
-            ]
-        },
-        {
-            topic: 'topic-2',
-            partitions: 1,
-            replicationFactor: 1,
-            configEntries: [
-                {
-                    name: 'compression.type',
-                    value: 'gzip'
-                }
-            ]
-        }
-   ])
-   const created = await MyKafka.CreateTopics(...) // True or false
-```
-
-Consume on a topic. Defaults:
-```javascript
-    MyKafka.StartListeningOnTopic({
-        topic: 'test',
-        groupId: 'default'
-    }, (error,message) => {
-        ...
-    })
-```
-
 Produce on a topic. Defaults:
 ```javascript
-    MyKafka.SendMessageToTopic({
-        topic: 'test',
-        groupId: 'default'
-    }, (error,message) => {
-        ...
-    })
+MyKafka.produceOnTopic(config, (error,message) => {
+    ...
+})
+```
+Default config for producer :
+```
+{
+    topic: 'test',
+    partition: 0,
+    message: 'test'
+}
 ```
