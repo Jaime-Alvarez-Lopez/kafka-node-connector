@@ -1,7 +1,7 @@
 Kakfa-node-connector
 ====================
 
-Kafka-node-connector is a npm package that easies the use of [kafka-node npm package](https://www.npmjs.com/package/kafka-node)
+[Kafka-node-connector](https://www.npmjs.com/package/kafka-node-connector) is a npm package that easies the use of [kafka-node npm package](https://www.npmjs.com/package/kafka-node)
 
 ## Install Kakfa-node-connector
 ```bash
@@ -16,11 +16,8 @@ Instantiate kafka-node-connector :
 const {KafkaNodeConnector} = require('kafka-node-connector')
 
 const MyKafka = new KafkaNodeConnector(config)
-```
 
-Optionally you can set it's configuration :
-```javascript
-// config: JSON object. Default values are:
+// Default config values are:
 {
     name: 'KafkaNode',
     host: 'localhost:9092',
@@ -32,24 +29,24 @@ Optionally you can set it's configuration :
 
 Start the connection :
 ```javascript
-await MyKafka.connect().catch(r => r)
+await MyKafka.connect()
 // True or false
 ```
 
 List existing topics :
 ```javascript
-await MyKafka.listTopics().catch(r => r)
+await MyKafka.listTopics()
 // Object containing topics or false
 ```
 
 Check if an Array of strings as topics names exists :
 ```javascript
-await MyKafka.topicsExist(['topic1','topic2']).catch(r => r)
+await MyKafka.topicsExist(['topic1','topic2'])
 // True or false
 ```
 
 Create topics from an Array of objects containing topic and extra configuration.
-Note that topics will be checked wether exist or not before creation, so no need to use topicsExist() before :
+Note that topics will be checked wether exist or not before creation, so no need to use topicsExist() :
 ```javascript
 await MyKafka.createTopics([
    {
@@ -74,34 +71,47 @@ await MyKafka.createTopics([
             }
         ]
     }
-]).catch(r => r)
+])
 ```
 
-Consume on a topic.
+Consume on a topic :
 ```javascript
 MyKafka.consumeOnTopic(config, (error,message) => {
     ...
 })
-```
-Default config for consumer :
-```
+
+// Default config:
 {
     topic: 'test',
     groupId: 'default',
     partition: 0
 }
 ```
-Produce on a topic. Defaults:
+
+Produce a message on a topic :
 ```javascript
 MyKafka.produceOnTopic(config, (error,message) => {
     ...
 })
-```
-Default config for producer :
-```
+
+// Default config
 {
     topic: 'test',
     partition: 0,
     message: 'test'
+}
+```
+
+Produce many messages on a topic :
+```javascript
+MyKafka.produceManyOnTopic(config, (error,message) => {
+    ...
+})
+
+// Default config
+{
+    topic: 'test',
+    partition: 0,
+    messages: [{message:'test'}]
 }
 ```

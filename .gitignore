@@ -2,3 +2,5 @@ node_modules
 docker-compose.yml
 Dockerfile
 .dockerignore
+test/index.js
+src/KafkaBuilder.js

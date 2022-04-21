@@ -1,15 +1,20 @@
 {
   "name": "kafka-node-connector",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Kafka-node-connector is a npm package that easies the use of [kafka-node npm package](https://www.npmjs.com/package/kafka-node)",
   "main": "index.js",
   "bin": "index.js",
   "scripts": {
   },
   "keywords": [
+    "kafa"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jaime-Alvarez-Lopez/kafka-node-connector.git"
+  },
   "author": "jaime-alvarez",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "kafka-node": "^5.0.0"
   }
