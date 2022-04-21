@@ -160,12 +160,11 @@ KafkaNode.prototype.createTopics = function (topics) {
 	* @param {Object} config Object defining topicName, groupId and partition
 	* @param {function} cb Message callback
 	*/
-KafkaNode.prototype.consumeOnTopic = async function ({topic,groupId,partition},cb) {
+KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId,partition},cb) {
 	if (this.client) {
 		const e = await this.topicsExist([topic])
-		console.log('exist',e)
 		if (e) {
-			const consumer = new Kafka.Consumer(this.client,[{topic:topic || 'test',partition: partition || 0}],{groupId: groupId || 'default'})
+			const consumer = new Kafka.Consumer(this.client,[{topic:topic,partition: partition || 0}],{groupId: groupId || 'default'})
 
 			this.emitter.emit('CONSUMER_START',topic)
 
