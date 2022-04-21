@@ -1,7 +1,7 @@
 Kakfa-node-connector
 ====================
 
-[Kafka-node-connector](https://www.npmjs.com/package/kafka-node-connector) is a npm package that easies the use of [kafka-node npm package](https://www.npmjs.com/package/kafka-node)
+[Kafka-node-connector](https://www.npmjs.com/package/kafka-node-connector) is a npm package that easies the use of [kafka-node](https://www.npmjs.com/package/kafka-node)
 
 ## Install Kakfa-node-connector
 ```bash
@@ -86,6 +86,8 @@ MyKafka.consumeOnTopic(config, (error,message) => {
     groupId: 'default',
     partition: 0
 }
+
+// Raises Error if no client or topic not exist
 ```
 
 Produce a message on a topic :
@@ -100,6 +102,8 @@ MyKafka.produceOnTopic(config, (error,message) => {
     partition: 0,
     message: 'test'
 }
+
+// Raises Error if no client or topic not exist
 ```
 
 Produce many messages on a topic :
@@ -114,4 +118,6 @@ MyKafka.produceManyOnTopic(config, (error,message) => {
     partition: 0,
     messages: [{message:'test'}]
 }
+
+// Raises Error if no client or topic not exist
 ```
