@@ -22,17 +22,17 @@ const KafkaNode = function (config = {}) {
 
 	this.client = null
 
-	this.emitter = new KafkaEmitter()
+	KafkaEmitter.call(this)
 
 	this.__sync_metadata = () => {
 		return new Promise((resolve,reject) => {
 			if (this.client) {
 				this.client.loadMetadata(() => {
-					this.emitter.emit('METADATA_OK')
+					this.emit('METADATA_OK')
 					resolve(true)
 				})
 			} else {
-				this.emitter.emit('ERROR','Load metadata')
+				this.emit('ERROR','Load metadata')
 				reject(false)
 			}
 
@@ -41,13 +41,13 @@ const KafkaNode = function (config = {}) {
 	this.__connection_resolve = () => (
 		new Promise((resolve,reject) => {
 			const client = new Kafka.KafkaClient({kafkaHost: this.host})
-			this.emitter.emit('WAIT_RESOLVE')
+			this.emit('WAIT_RESOLVE')
 			client.on('ready', () => {
 				resolve(client)
 			})
 			client.on('error',(err) => {
 				if (err) {
-					this.emitter.emit('ERROR',err)
+					this.emit('ERROR',err)
 					reject(null)
 				}
 			})
@@ -68,10 +68,10 @@ KafkaNode.prototype.connect = async function () {
 	return new Promise(async (resolve,reject) => {
 		this.client = await this.__connection_resolve().catch(e => e)
 		if (this.client !== null) {
-			this.emitter.emit('CONNECT_OK',`(${this.name}->${this.host})`)
+			this.emit('CONNECT_OK',`(${this.name}->${this.host})`)
 			await this.__sync_metadata().catch(r => r)
 		} else {
-			this.emitter.emit('CONNECT_NOT_OK',`(${this.name}->${this.host})`)
+			this.emit('CONNECT_NOT_OK',`(${this.name}->${this.host})`)
 		}
 		resolve(this.client instanceof Kafka.KafkaClient)
 	})
@@ -87,16 +87,16 @@ KafkaNode.prototype.topicsExist = function (topicsName) {
 	return new Promise((resolve,reject) => {
 		if (this.client) {
 			this.client?.topicExists(topicsName,(data) => {
-				this.emitter.emit('CHECKING_TOPICS')
+				this.emit('CHECKING_TOPICS')
 				if (!(data instanceof Error)) {
 					resolve(true)
 				} else {
-					this.emitter.emit('TOPICS_NOT_EXIST',topicsName)
+					this.emit('TOPICS_NOT_EXIST',topicsName)
 					resolve(false)
 				}
 			})
 		} else {
-			this.emitter.emit('NO_CLIENT')
+			this.emit('NO_CLIENT')
 			reject(this.NO_CLIENT_ERROR)
 		}
 	})
@@ -113,16 +113,16 @@ KafkaNode.prototype.listTopics = function () {
 			this.admin = this.admin || new Kafka.Admin(this.client)
 			this.admin.listTopics((err,res) => {
 				if (res) {
-					this.emitter.emit('TOPICS_LIST',Object.keys(res[1].metadata).length > 0?res[1].metadata:'Empty')
+					this.emit('TOPICS_LIST',Object.keys(res[1].metadata).length > 0?res[1].metadata:'Empty')
 					resolve(res[1].metadata)
 				}
 				if (err) {
-					this.emitter.emit('ERROR',err)
+					this.emit('ERROR',err)
 					reject(false)
 				}
 			})
 		} else {
-			this.emitter.emit('NO_CLIENT')
+			this.emit('NO_CLIENT')
 			reject(this.NO_CLIENT_ERROR)
 		}
 	})
@@ -138,7 +138,7 @@ KafkaNode.prototype.createTopics = function (topics) {
 	return new Promise(async (resolve,reject) => {
 		const e = await this.topicsExist(topics.map(t => t?.topic))
 		if (!e) {
-			this.emitter.emit('TOPICS_CREATE')
+			this.emit('TOPICS_CREATE')
 			this.client.createTopics(topics, (err,data) => {
 				if (data && !(data instanceof Error)) {
 					resolve(true)
@@ -147,12 +147,12 @@ KafkaNode.prototype.createTopics = function (topics) {
 					resolve(false)
 				}
 				if (err) {
-					this.emitter.emit('ERROR',err)
+					this.emit('ERROR',err)
 					reject(err)
 				}
 			})
 		} else {
-			this.emitter.emit('TOPICS_EXIST')
+			this.emit('TOPICS_EXIST')
 			resolve(false)
 		}
 	})
@@ -178,10 +178,10 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = '
 			}
 			const consumer = new Kafka.Consumer(this.client,[{topic:topic,partition: partition}],{groupId: groupId})
 
-			this.emitter.emit('CONSUMER_START',topic)
+			this.emit('CONSUMER_START',topic)
 
 			consumer.on('message',(m) => {
-				this.emitter.emit('CONSUMER_MESSAGE',topic)
+				this.emit('CONSUMER_MESSAGE',topic)
 
 				cb(null,transformMessage(m))
 			})
@@ -192,11 +192,11 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = '
 				}
 			})
 		} else {
-			this.emitter.emit('CONSUMER_NOT_A_TOPIC',topic)
+			this.emit('CONSUMER_NOT_A_TOPIC',topic)
 			throw this.NO_TOPIC_ERROR
 		}
 	} else {
-		this.emitter.emit('NO_CLIENT')
+		this.emit('NO_CLIENT')
 		throw this.NO_CLIENT_ERROR
 	}
 }
@@ -228,23 +228,23 @@ KafkaNode.prototype.produceOnTopic = function ({topic = 'test',partition = 0,mes
 
 				producer.send(payload,(err,data) => {
 					if (data && !(data instanceof Error)) {
-						this.emitter.emit('PRODUCER_START',topic)
+						this.emit('PRODUCER_START',topic)
 						resolve(data)
 					}
 				})
 
 				producer.on('error',(err) => {
 					if (err) {
-						this.emitter.emit('ERROR',err)
+						this.emit('ERROR',err)
 						reject(err)
 					}
 				})
 			} else {
-				this.emitter.emit('PRODUCER_NOT_A_TOPIC',topic)
+				this.emit('PRODUCER_NOT_A_TOPIC',topic)
 				reject(this.NO_TOPIC_ERROR)
 			}
 		} else {
-			this.emitter.emit('NO_CLIENT')
+			this.emit('NO_CLIENT')
 			reject(this.NO_CLIENT_ERROR)
 		}
 	})
@@ -277,24 +277,24 @@ KafkaNode.prototype.produceManyOnTopic = function ({topic = 'test',partition = 0
 
 				producer.send(payload,(err,data) => {
 					if (data && !(data instanceof Error)) {
-						this.emitter.emit('PRODUCER_MANY_START',topic)
+						this.emit('PRODUCER_MANY_START',topic)
 						resolve(data)
 					}
 				})
 
 				producer.on('error',(err) => {
 					if (err) {
-						this.emitter.emit('ERROR',err)
+						this.emit('ERROR',err)
 						reject(err)
 					}
 				})
 
 			} else {
-				this.emitter.emit('PRODUCER_NOT_A_TOPIC',topic)
+				this.emit('PRODUCER_NOT_A_TOPIC',topic)
 				reject(this.NO_TOPIC_ERROR)
 			}
 		} else {
-			this.emitter.emit('NO_CLIENT')
+			this.emit('NO_CLIENT')
 			reject(this.NO_CLIENT_ERROR)
 		}
 	})
