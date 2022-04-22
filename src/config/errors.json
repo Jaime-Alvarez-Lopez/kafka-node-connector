@@ -1,0 +1,6 @@
+{
+  "NO_CLIENT_ERROR": "Client is not connected to Kafka.",
+  "NO_TOPIC_ERROR": "Impossible to produce/consume on a non existing topic.",
+  "MESSAGE_NOT_OBJECT": "Message provided in produceOnTopic() is not of type: Object or String",
+  "MESSAGES_NOT_ARRAY": "Messages provided in produceManyOnTopic() is not of type: Array of Objects"
+}

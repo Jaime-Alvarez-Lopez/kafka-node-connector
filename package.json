@@ -1,11 +1,10 @@
 {
   "name": "kafka-node-connector",
-  "version": "1.0.2",
-  "description": "Kafka-node-connector is a npm package that easies the use of [kafka-node npm package](https://www.npmjs.com/package/kafka-node)",
+  "version": "1.0.3",
+  "description": "Kafka-node-connector is a npm package that easies the use of [kafka-node](https://www.npmjs.com/package/kafka-node) npm package",
   "main": "index.js",
   "bin": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "keywords": [
     "kafa"
   ],

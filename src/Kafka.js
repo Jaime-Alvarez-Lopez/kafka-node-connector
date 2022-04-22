@@ -2,7 +2,7 @@
 
 const Kafka = require('kafka-node')
 const KafkaEmitter = require('./kafkaEmitter')
-
+const {ERRORS} = require('./config')
 
 /**
 	* Creates a KafkaNode instance
@@ -53,8 +53,10 @@ const KafkaNode = function (config = {}) {
 			})
 		})
 	)
-	this.NO_CLIENT_ERROR = Error('Client is not connected to Kafka.')
-	this.NO_TOPIC_ERROR = Error('Impossible to send/consume on a non existing topic.')
+	this.NO_CLIENT_ERROR = Error(ERRORS.NO_CLIENT_ERROR)
+	this.NO_TOPIC_ERROR = Error(ERRORS.NO_TOPIC_ERROR)
+	this.MESSAGE_NOT_OBJECT = Error(ERRORS.MESSAGE_NOT_OBJECT)
+	this.MESSAGES_NOT_ARRAY = Error(ERRORS.MESSAGES_NOT_ARRAY)
 }
 
 /**
@@ -85,6 +87,7 @@ KafkaNode.prototype.topicsExist = function (topicsName) {
 	return new Promise((resolve,reject) => {
 		if (this.client) {
 			this.client?.topicExists(topicsName,(data) => {
+				this.emitter.emit('CHECKING_TOPICS')
 				if (!(data instanceof Error)) {
 					resolve(true)
 				} else {
@@ -160,17 +163,27 @@ KafkaNode.prototype.createTopics = function (topics) {
 	* @param {Object} config Object defining topicName, groupId and partition
 	* @param {function} cb Message callback
 	*/
-KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId,partition},cb) {
+KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = 'default',partition = 0},cb) {
 	if (this.client) {
 		const e = await this.topicsExist([topic])
 		if (e) {
-			const consumer = new Kafka.Consumer(this.client,[{topic:topic,partition: partition || 0}],{groupId: groupId || 'default'})
+			const transformMessage = (m) => {
+				const parsed = JSON.parse(m.value)
+				return {
+					topic: m.topic,
+					message: parsed,
+					partition: m.partition,
+					key: m.key
+				}
+			}
+			const consumer = new Kafka.Consumer(this.client,[{topic:topic,partition: partition}],{groupId: groupId})
 
 			this.emitter.emit('CONSUMER_START',topic)
 
 			consumer.on('message',(m) => {
 				this.emitter.emit('CONSUMER_MESSAGE',topic)
-				cb(null,m)
+
+				cb(null,transformMessage(m))
 			})
 
 			consumer.on('error',(err) => {
@@ -190,83 +203,102 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId,par
 
 /**
 	*	Send a message to a topic
-	* @param {Object} config {topic:'test',partition:0,message:'message'||{message:...}}
-	* @param {function} cb Message callback
+	* @async
+	* @param {Object} config {topic:'test',partition:0,message:'message'||{message:,...}}
+	* @return {Promise.<Boolean>}
 	*/
-KafkaNode.prototype.produceOnTopic = async function ({topic = 'test',partition,message = 'test'},cb) {
-	if (this.client) {
-		const e = await this.topicsExist([topic])
-		if (e) {
-			const producer = new Kafka.Producer(this.client)
+KafkaNode.prototype.produceOnTopic = function ({topic = 'test',partition = 0,message = {message:'test'},compression = 0}) {
+	return new Promise(async (resolve,reject) => {
+		if (this.client) {
+			if (Array.isArray(message)) {
+				reject(this.MESSAGE_NOT_OBJECT)
+				return
+			}
+			const e = await this.topicsExist([topic])
+			if (e) {
+				const producer = new Kafka.Producer(this.client)
 
-			const payload = [{
-				topic: topic,
-				messages: [(typeof message === 'object')?JSON.stringify(message):message],
-				partition: partition || 0,
-				attributes: 2,
-				timeStamp: Date.now()
-			}]
+				const payload = [{
+					topic: topic,
+					messages: [(typeof message === 'object')?JSON.stringify(message):message],
+					partition: partition,
+					attributes: compression,
+					timeStamp: Date.now()
+				}]
 
-			producer.send(payload,(err,data) => {
-				this.emitter.emit('PRODUCER_START',topic)
-				cb(null,data)
-			})
+				producer.send(payload,(err,data) => {
+					if (data && !(data instanceof Error)) {
+						this.emitter.emit('PRODUCER_START',topic)
+						resolve(data)
+					}
+				})
 
-			producer.on('error',(err) => {
-				if (err) {
-					this.emitter.emit('ERROR',err)
-					cb(err,null)
-				}
-			})
+				producer.on('error',(err) => {
+					if (err) {
+						this.emitter.emit('ERROR',err)
+						reject(err)
+					}
+				})
+			} else {
+				this.emitter.emit('PRODUCER_NOT_A_TOPIC',topic)
+				reject(this.NO_TOPIC_ERROR)
+			}
 		} else {
-			this.emitter.emit('PRODUCER_NOT_A_TOPIC',topic)
-			throw this.NO_TOPIC_ERROR
+			this.emitter.emit('NO_CLIENT')
+			reject(this.NO_CLIENT_ERROR)
 		}
-	} else {
-		this.emitter.emit('NO_CLIENT')
-		throw this.NO_CLIENT_ERROR
-	}
+	})
 }
 
 /**
 	*	Send various messages to a topic
-	* @param {Object} config {topic:'test',partition:0,messages:[{message:...},{message:...}]}
-	* @param {function} cb Message callback
+	* @async
+	* @param {Object} config {topic:'test',partition:0,messages:[{message:,...},{message:,...}]}
+	* @return {Promise.<Boolean>}
 	*/
-KafkaNode.prototype.produceManyOnTopic = async function ({topic = 'test',partition,messages = [{message:'test'}]},cb) {
-	if (this.client) {
-		const e = await this.topicsExist([topic])
-		if (e) {
-			const producer = new Kafka.Producer(this.client)
+KafkaNode.prototype.produceManyOnTopic = function ({topic = 'test',partition = 0,messages = [{message:'test'},{number: 2}],compression = 0}) {
+	return new Promise(async (resolve,reject) => {
+		if (this.client) {
+			if (!Array.isArray(messages)) {
+				reject(this.PRODUCER_MANY_NOT_ARRAY)
+				return
+			}
+			const e = await this.topicsExist([topic])
+			if (e) {
+				const producer = new Kafka.Producer(this.client)
 
-			const payload = [{
-				topic: topic,
-				messages: [JSON.stringify(messages.flat())],
-				partition: partition || 0,
-				attributes: 2,
-				timeStamp: Date.now()
-			}]
+				const payload = [{
+					topic: topic,
+					messages: [JSON.stringify(messages.flat())],
+					partition: partition,
+					attributes: compression,
+					timeStamp: Date.now()
+				}]
 
-			producer.send(payload,(err,data) => {
-				this.emitter.emit('PRODUCER_MANY_START',topic)
-				cb(null,data)
-			})
+				producer.send(payload,(err,data) => {
+					if (data && !(data instanceof Error)) {
+						this.emitter.emit('PRODUCER_MANY_START',topic)
+						resolve(data)
+					}
+				})
 
-			producer.on('error',(err) => {
-				if (err) {
-					this.emitter.emit('ERROR',err)
-					cb(err,null)
-				}
-			})
+				producer.on('error',(err) => {
+					if (err) {
+						this.emitter.emit('ERROR',err)
+						reject(err)
+					}
+				})
 
+			} else {
+				this.emitter.emit('PRODUCER_NOT_A_TOPIC',topic)
+				reject(this.NO_TOPIC_ERROR)
+			}
 		} else {
-			this.emitter.emit('PRODUCER_NOT_A_TOPIC',topic)
-			throw this.NO_TOPIC_ERROR
+			this.emitter.emit('NO_CLIENT')
+			reject(this.NO_CLIENT_ERROR)
 		}
-	} else {
-		this.emitter.emit('NO_CLIENT')
-		throw this.NO_CLIENT_ERROR
-	}
+	})
+
 }
 
 module.exports = KafkaNode

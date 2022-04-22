@@ -1,10 +1,10 @@
 const EventEmitter = require('events')
-const {emitterEvents} = require('./config/emitterEvents')
+const {EVENTS} = require('./config')
 
 const KafkaEmitter = function () {
 	this.emitter = new EventEmitter()
 
-	this.events = emitterEvents
+	this.events = EVENTS
 
 	this.events.forEach(ev => {
 		this.emitter.on(ev.event, (value) => {
