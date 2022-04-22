@@ -80,7 +80,7 @@ MyKafka.consumeOnTopic(config, (error,message) => {
     ...
 })
 
-// Default config:
+// config : options for consumer
 {
     topic: 'test',
     groupId: 'default',
@@ -92,32 +92,28 @@ MyKafka.consumeOnTopic(config, (error,message) => {
 
 Produce a message on a topic :
 ```javascript
-MyKafka.produceOnTopic(config, (error,message) => {
-    ...
-})
+await MyKafka.produceOnTopic(config)
 
-// Default config
+// config : options for producer
 {
     topic: 'test',
     partition: 0,
-    message: 'test'
+    message: {message:'test'}
 }
 
-// Raises Error if no client or topic not exist
+// Raises Error if message is of type Array and if no client or topic aviable
 ```
 
 Produce many messages on a topic :
 ```javascript
-MyKafka.produceManyOnTopic(config, (error,message) => {
-    ...
-})
+await MyKafka.produceManyOnTopic(config)
 
-// Default config
+// config : options for producer
 {
     topic: 'test',
     partition: 0,
-    messages: [{message:'test'}]
+    messages: [{message:'message 1'},{number: 2}]
 }
 
-// Raises Error if no client or topic not exist
+// Raises Error if messages is not of type Array and if no client or topic aviable
 ```
