@@ -167,15 +167,13 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = '
 	if (this.client) {
 		const e = await this.topicsExist([topic])
 		if (e) {
-			const transformMessage = (m) => {
-				const parsed = JSON.parse(m.value)
-				return {
-					topic: m.topic,
-					message: parsed,
-					partition: m.partition,
-					key: m.key
-				}
-			}
+			const transformMessage = (m) => ({
+				topic: m.topic,
+				message: m.value,
+				partition: m.partition,
+				key: m.key
+			})
+
 			const consumer = new Kafka.Consumer(this.client,[{topic:topic,partition: partition}],{groupId: groupId})
 
 			this.emit('CONSUMER_START',topic)
