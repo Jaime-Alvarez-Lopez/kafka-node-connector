@@ -116,7 +116,7 @@ await MyKafka.produceManyOnTopic(config)
 {
     topic: 'test',
     partition: 0,
-    messages: [{message:'message 1'},{number: 2}]
+    messages: [{message:'message 1'},{number: 2}],
     compression: 0
     // 0: no compression
     // 1: gzip
