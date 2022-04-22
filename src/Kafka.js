@@ -167,6 +167,7 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = '
 	if (this.client) {
 		const e = await this.topicsExist([topic])
 		if (e) {
+
 			const transformMessage = (m) => ({
 				topic: m.topic,
 				message: m.value,
