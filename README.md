@@ -98,7 +98,11 @@ await MyKafka.produceOnTopic(config)
 {
     topic: 'test',
     partition: 0,
-    message: {message:'test'}
+    message: {message:'test'},
+    compression: 0
+    // 0: no compression
+    // 1: gzip
+    // 2: snappy
 }
 
 // Raises Error if message is of type Array and if no client or topic aviable
@@ -113,6 +117,10 @@ await MyKafka.produceManyOnTopic(config)
     topic: 'test',
     partition: 0,
     messages: [{message:'message 1'},{number: 2}]
+    compression: 0
+    // 0: no compression
+    // 1: gzip
+    // 2: snappy
 }
 
 // Raises Error if messages is not of type Array and if no client or topic aviable

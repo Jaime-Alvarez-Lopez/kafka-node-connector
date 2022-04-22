@@ -163,7 +163,7 @@ KafkaNode.prototype.createTopics = function (topics) {
 	* @param {Object} config Object defining topicName, groupId and partition
 	* @param {function} cb Message callback
 	*/
-KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId,partition},cb) {
+KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = 'default',partition = 0},cb) {
 	if (this.client) {
 		const e = await this.topicsExist([topic])
 		if (e) {
@@ -176,7 +176,7 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId,par
 					key: m.key
 				}
 			}
-			const consumer = new Kafka.Consumer(this.client,[{topic:topic,partition: partition || 0}],{groupId: groupId || 'default'})
+			const consumer = new Kafka.Consumer(this.client,[{topic:topic,partition: partition}],{groupId: groupId})
 
 			this.emitter.emit('CONSUMER_START',topic)
 
@@ -207,7 +207,7 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId,par
 	* @param {Object} config {topic:'test',partition:0,message:'message'||{message:,...}}
 	* @return {Promise.<Boolean>}
 	*/
-KafkaNode.prototype.produceOnTopic = function ({topic = 'test',partition,message = {message:'test'}}) {
+KafkaNode.prototype.produceOnTopic = function ({topic = 'test',partition = 0,message = {message:'test'},compression = 0}) {
 	return new Promise(async (resolve,reject) => {
 		if (this.client) {
 			if (Array.isArray(message)) {
@@ -221,8 +221,8 @@ KafkaNode.prototype.produceOnTopic = function ({topic = 'test',partition,message
 				const payload = [{
 					topic: topic,
 					messages: [(typeof message === 'object')?JSON.stringify(message):message],
-					partition: partition || 0,
-					attributes: 2,
+					partition: partition,
+					attributes: compression,
 					timeStamp: Date.now()
 				}]
 
@@ -256,7 +256,7 @@ KafkaNode.prototype.produceOnTopic = function ({topic = 'test',partition,message
 	* @param {Object} config {topic:'test',partition:0,messages:[{message:,...},{message:,...}]}
 	* @return {Promise.<Boolean>}
 	*/
-KafkaNode.prototype.produceManyOnTopic = function ({topic = 'test',partition,messages = [{message:'test'},{number: 2}]}) {
+KafkaNode.prototype.produceManyOnTopic = function ({topic = 'test',partition = 0,messages = [{message:'test'},{number: 2}],compression = 0}) {
 	return new Promise(async (resolve,reject) => {
 		if (this.client) {
 			if (!Array.isArray(messages)) {
@@ -270,8 +270,8 @@ KafkaNode.prototype.produceManyOnTopic = function ({topic = 'test',partition,mes
 				const payload = [{
 					topic: topic,
 					messages: [JSON.stringify(messages.flat())],
-					partition: partition || 0,
-					attributes: 2,
+					partition: partition,
+					attributes: compression,
 					timeStamp: Date.now()
 				}]
 
