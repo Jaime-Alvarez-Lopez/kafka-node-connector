@@ -40,6 +40,38 @@
     "message":"===> Topics not exist"
   },
   {
+    "event": "CONSUMER_NOT_PAUSE",
+    "message": "===> Warning: Can't pause unexistant consumer with ID:"
+  },
+  {
+    "event": "CONSUMER_PAUSE",
+    "message": "===> Paused consumer with ID:"
+  },
+  {
+    "event": "CONSUMER_NOT_RESUME",
+    "message": "===> Warning: Can't resume unexistant consumer with ID:"
+  },
+  {
+    "event": "CONSUMER_RESUME",
+    "message": "===> Resumed consumer with ID:"
+  },
+  {
+    "event": "CONSUMER_NOT_CLOSE",
+    "message": "===> Warning: Can't close unexistant consumer with ID:"
+  },
+  {
+    "event": "CONSUMER_CLOSE",
+    "message": "===> Closed consumer with ID:"
+  },
+  {
+    "event": "CONSUMER_LIST_ID",
+    "message": "===> Listing consumers IDs..."
+  },
+  {
+    "event":"CONSUMER_ID",
+    "message":"===> Consumer ID already exists. Using uuid. Already used ID:"
+  },
+  {
     "event":"CONSUMER_START",
     "message":"===> Listening on topic"
   },
