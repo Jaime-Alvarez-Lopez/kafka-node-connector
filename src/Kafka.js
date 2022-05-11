@@ -281,7 +281,6 @@ KafkaNode.prototype.closeConsumer = function (id) {
 	consumer[0][ID].pause()
 	this.emit('CONSUMER_CLOSE',ID)
 	this.consumers = this.consumers.filter(c => Object.keys(c)[0] !== ID)
-	console.log(this.consumers)
 	return true
 }
 

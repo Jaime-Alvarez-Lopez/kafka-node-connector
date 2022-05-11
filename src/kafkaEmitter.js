@@ -2,18 +2,15 @@ const EventEmitter = require('events')
 const {EVENTS} = require('./config')
 
 const KafkaEmitter = function () {
-	this.emitter = new EventEmitter()
-
-
-	EVENTS.forEach(ev => {
-		this.emitter.on(ev.event, (value) => {
-			console.info(ev.message,value)
-		})
-	})
+	this.events = EVENTS
 
 	this.emit = function (event,value = '') {
-		this.emitter.emit(event,value)
+		const ev = this.events.filter(e => e.event === event)
+		console.info(ev[0].message,value)
+		return
 	}
 }
+
+
 
 module.exports = KafkaEmitter
