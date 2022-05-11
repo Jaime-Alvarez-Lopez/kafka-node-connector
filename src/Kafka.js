@@ -1,9 +1,8 @@
 'use strict';
-
 const Kafka = require('kafka-node')
 const KafkaEmitter = require('./kafkaEmitter')
 const {ERRORS} = require('./config')
-
+const {randomId,getId} = require('./utils')
 /**
 	* Creates a KafkaNode instance
 	* @constructor
@@ -24,6 +23,8 @@ const KafkaNode = function (config = {}) {
 
 	KafkaEmitter.call(this)
 
+	this.consumers = []
+
 	this.__sync_metadata = () => {
 		return new Promise((resolve,reject) => {
 			if (this.client) {
@@ -35,7 +36,6 @@ const KafkaNode = function (config = {}) {
 				this.emit('ERROR','Load metadata')
 				reject(false)
 			}
-
 		})
 	}
 	this.__connection_resolve = () => (
@@ -53,10 +53,17 @@ const KafkaNode = function (config = {}) {
 			})
 		})
 	)
-	this.NO_CLIENT_ERROR = Error(ERRORS.NO_CLIENT_ERROR)
-	this.NO_TOPIC_ERROR = Error(ERRORS.NO_TOPIC_ERROR)
-	this.MESSAGE_NOT_OBJECT = Error(ERRORS.MESSAGE_NOT_OBJECT)
-	this.MESSAGES_NOT_ARRAY = Error(ERRORS.MESSAGES_NOT_ARRAY)
+	this.__filterConsumers = function (id) {
+		return this.consumers.filter(c => {
+			const key = Object.keys(c)[0]
+			return key === id || key.includes(id)
+		})
+	}
+	this.NO_CLIENT_ERROR = ERRORS.NO_CLIENT_ERROR
+	this.NO_TOPIC_ERROR = ERRORS.NO_TOPIC_ERROR
+	this.MESSAGE_NOT_OBJECT = ERRORS.MESSAGE_NOT_OBJECT
+	this.MESSAGES_NOT_ARRAY = ERRORS.MESSAGES_NOT_ARRAY
+	this.CONSUMER_ID_NOT_STRING = ERRORS.CONSUMER_ID_NOT_STRING
 }
 
 /**
@@ -78,7 +85,7 @@ KafkaNode.prototype.connect = async function () {
 }
 
 /**
-	* Check if an array of topics exists
+	* Check if an Array of topics exists
 	* @async
 	* @param {(string|string[])} topicsName String or string array: ['topic1','topic2']
 	* @return {Promise.<Boolean>}
@@ -163,12 +170,13 @@ KafkaNode.prototype.createTopics = function (topics) {
 	* @param {Object} config Object defining topicName, groupId and partition
 	* @param {function} cb Message callback
 	*/
-KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = 'default',partition = 0},cb) {
+KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = 'default',partition = 0, consumerId = randomId()},cb) {
 	if (this.client) {
 		const e = await this.topicsExist([topic])
 		if (e) {
 
 			const transformMessage = (m) => ({
+				consumerId: consumerId,
 				topic: m.topic,
 				message: m.value,
 				partition: m.partition,
@@ -177,7 +185,24 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = '
 
 			const consumer = new Kafka.Consumer(this.client,[{topic:topic,partition: partition}],{groupId: groupId})
 
-			this.emit('CONSUMER_START',topic)
+			const consumerWithId = {}
+
+			if (typeof consumerId !== 'string') throw new Error(this.CONSUMER_ID_NOT_STRING)
+
+			if (this.__filterConsumers(consumerId).length === 0) {
+
+				consumerWithId[consumerId] = consumer
+
+				this.consumers.push(consumerWithId)
+			} else {
+				this.emit('CONSUMER_ID',consumerId)
+				consumerWithId[randomId()] = consumer
+
+				this.consumers.push(consumerWithId)
+			}
+
+
+			this.emit('CONSUMER_START',`${topic}:${partition}`)
 
 			consumer.on('message',(m) => {
 				this.emit('CONSUMER_MESSAGE',topic)
@@ -192,12 +217,72 @@ KafkaNode.prototype.consumeOnTopic = async function ({topic = 'test',groupId = '
 			})
 		} else {
 			this.emit('CONSUMER_NOT_A_TOPIC',topic)
-			throw this.NO_TOPIC_ERROR
+			throw new Error(this.NO_TOPIC_ERROR)
 		}
 	} else {
 		this.emit('NO_CLIENT')
-		throw this.NO_CLIENT_ERROR
+		throw new Error(this.NO_CLIENT_ERROR)
 	}
+}
+
+/**
+	* Lists all consumers ids
+	* @return {Object} consumersId Consumer's id Array
+	*/
+KafkaNode.prototype.listConsumers = function () {
+	const consumersId = []
+	this.consumers.forEach(c => consumersId.push(Object.keys(c)[0]))
+	this.emit('CONSUMER_LIST_ID',consumersId)
+	return consumersId
+}
+
+/**
+	* Pauses a running consumer
+	* @param {String} id Consumer's id
+	*/
+KafkaNode.prototype.pauseConsumer = function (id) {
+	const consumer = this.__filterConsumers(id)
+	if (consumer.length === 0) {
+		this.emit('CONSUMER_NOT_PAUSE',id)
+		return
+	}
+	const ID = getId(consumer)
+	consumer[0][ID].pause()
+	this.emit('CONSUMER_PAUSE',ID)
+	return true
+}
+
+/**
+	* Resumes a paused consumer
+	* @param {String} id Consumer's id
+	*/
+KafkaNode.prototype.resumeConsumer = function (id) {
+	const consumer = this.__filterConsumers(id)
+	if (consumer.length === 0) {
+		this.emit('CONSUMER_NOT_RESUME',id)
+		return
+	}
+	const ID = getId(consumer)
+	consumer[0][ID].resume()
+	this.emit('CONSUMER_RESUME',ID)
+}
+
+/**
+	* Removes a consumer
+	* @param {String} id Consumer's id
+	*/
+KafkaNode.prototype.closeConsumer = function (id) {
+	const consumer = this.__filterConsumers(id)
+	if (consumer.length === 0) {
+		this.emit('CONSUMER_NOT_CLOSE',id)
+		return
+	}
+	const ID = getId(consumer)
+	consumer[0][ID].pause()
+	this.emit('CONSUMER_CLOSE',ID)
+	this.consumers = this.consumers.filter(c => Object.keys(c)[0] !== ID)
+	console.log(this.consumers)
+	return true
 }
 
 /**

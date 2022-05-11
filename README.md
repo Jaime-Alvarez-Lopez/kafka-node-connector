@@ -1,7 +1,7 @@
 Kakfa-node-connector
 ====================
 
-[Kafka-node-connector](https://www.npmjs.com/package/kafka-node-connector) is a npm package that easies the use of [kafka-node](https://www.npmjs.com/package/kafka-node)
+Kafka-node-connector is a npm package that easies the use of [kafka-node](https://www.npmjs.com/package/kafka-node).
 
 ## Install Kakfa-node-connector
 ```bash
@@ -17,7 +17,7 @@ const {KafkaNodeConnector} = require('kafka-node-connector')
 
 const MyKafka = new KafkaNodeConnector(config)
 
-// Default config values are:
+// config : Object with configuration. Defaults:
 {
     name: 'KafkaNode',
     host: 'localhost:9092',
@@ -30,19 +30,19 @@ const MyKafka = new KafkaNodeConnector(config)
 Start the connection :
 ```javascript
 await MyKafka.connect()
-// True or false
+// Returns True or false
 ```
 
 List existing topics :
 ```javascript
 await MyKafka.listTopics()
-// Object containing topics or false
+// Returns Object containing topics or false
 ```
 
 Check if an Array of strings as topics names exists :
 ```javascript
 await MyKafka.topicsExist(['topic1','topic2'])
-// True or false
+// Returns True or false
 ```
 
 Create topics from an Array of objects containing topic and extra configuration.
@@ -62,7 +62,7 @@ await MyKafka.createTopics([
     },
     {
         topic: 'topic2',
-        partitions: 1,
+        partitions: 2,
         replicationFactor: 1,
         configEntries: [
             {
@@ -74,27 +74,58 @@ await MyKafka.createTopics([
 ])
 ```
 
-Consume on a topic :
+Consume on a topic. Especify a String as consumerId in the config object, to be able to pause, resume or close the consumer referencing that ID. If not defined, consumerId will be asigned a random ID :
 ```javascript
 MyKafka.consumeOnTopic(config, (error,message) => {
     ...
 })
 
-// config : options for consumer
+// config : Object with configuration. Defaults:
 {
     topic: 'test',
     groupId: 'default',
-    partition: 0
+    partition: 0,
+    consumerId: uuidv4
 }
+// If there's an error, message is null and vice versa
 
-// Raises Error if no client or topic not exist
+// Raises Error if consumerId is not of type String
+// Raises Error if no client
+// Raises Error if topic not exist
+```
+
+Pause consumer :
+```javascript
+MyKafka.pauseConsumer(id)
+
+// id: String, the consumerId
+```
+
+Resume consumer :
+```javascript
+MyKafka.resumeConsumer(id)
+
+// id: String, the consumerId
+```
+
+Close a consumer :
+```javascript
+MyKafka.closeConsumer(id)
+
+// id: String, the consumerId
+```
+
+List consumers IDs :
+```javascript
+MyKafka.listConsumers()
+// Returns Array containing Strings of Consumers IDs
 ```
 
 Produce a message on a topic :
 ```javascript
 await MyKafka.produceOnTopic(config)
 
-// config : options for producer
+// config : Object with configuration. Defaults:
 {
     topic: 'test',
     partition: 0,
@@ -102,17 +133,17 @@ await MyKafka.produceOnTopic(config)
     compression: 0
     // 0: no compression
     // 1: gzip
-    // 2: snappy
 }
-
-// Raises Error if message is of type Array and if no client or topic aviable
+// Raises Error if message is of type Array
+// Raises Error if no client aviable
+// Raises Error if topic not exist
 ```
 
 Produce many messages on a topic :
 ```javascript
 await MyKafka.produceManyOnTopic(config)
 
-// config : options for producer
+// config : Object with configuration. Defaults:
 {
     topic: 'test',
     partition: 0,
@@ -120,8 +151,9 @@ await MyKafka.produceManyOnTopic(config)
     compression: 0
     // 0: no compression
     // 1: gzip
-    // 2: snappy
 }
 
-// Raises Error if messages is not of type Array and if no client or topic aviable
+// Raises Error if messages is not of type Array
+// Raises Error if no client aviable
+// Raises Error if topic not exist
 ```
